@@ -1,0 +1,10 @@
+.gitignore
+target
+.idea
+*.jar
+*.iml
+dependency-reduced-pom.xml
+*.tgz
+libs
+INFO
+.DS_Store
