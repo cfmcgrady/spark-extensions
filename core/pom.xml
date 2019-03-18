@@ -9,7 +9,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spark-extensions-core</artifactId>
+    <artifactId>spark-extensions-core_${spark.version}</artifactId>
     <packaging>jar</packaging>
 
     <properties>

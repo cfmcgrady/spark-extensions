@@ -9,7 +9,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spark-extensions-examples</artifactId>
+    <artifactId>spark-extensions-examples_${spark.version}</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>cloud.fchen</groupId>
-            <artifactId>spark-extensions-core</artifactId>
+            <artifactId>spark-extensions-core_${spark.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
