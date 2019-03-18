@@ -203,5 +203,6 @@
         <module>examples</module>
         <module>core</module>
         <module>assembly</module>
+        <module>syncer</module>
     </modules>
 </project>

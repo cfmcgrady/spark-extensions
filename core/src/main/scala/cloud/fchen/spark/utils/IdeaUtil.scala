@@ -152,3 +152,15 @@ class IdeaUtil(
   }
 
 }
+
+trait HDFSOperations {
+  def login(principal: Option[String], keytab: Option[String]): Unit = {
+    if (principal.isDefined && keytab.isDefined) {
+      // scalastyle:off println
+      println(s"logining for user ${principal.get} using keytab file ${keytab.get}")
+      // scalastyle:on
+      // 需要手动login，原因是因为提交给yarn的时候需要kerberos认证
+      UserGroupInformation.loginUserFromKeytab(principal.get, keytab.get)
+    }
+  }
+}

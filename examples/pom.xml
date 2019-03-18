@@ -23,5 +23,27 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>cloud.fchen</groupId>
+                <artifactId>syncer</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <hdfsDirectory>aaaaaa</hdfsDirectory>
+                    <principal>chenfu@CDH.HOST.DXY</principal>
+                    <keytab>/Users/fchen/tmp/chenfu.keytab</keytab>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
