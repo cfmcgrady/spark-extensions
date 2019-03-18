@@ -7,6 +7,7 @@ import scala.collection.JavaConverters._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.maven.artifact.resolver.ArtifactResolver
 import org.apache.maven.execution.MavenSession
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.project.{DefaultProjectBuildingRequest, MavenProject}
@@ -23,6 +24,7 @@ abstract class PluginTest extends AbstractMojo with HDFSOperations {
 
   def run2(session: MavenSession,
            project: MavenProject,
+           archivePath: String,
            appHdfsPath: String,
            principal: String,
            keytab: String): Unit = {
@@ -30,7 +32,7 @@ abstract class PluginTest extends AbstractMojo with HDFSOperations {
     val confDir = sys.env.getOrElse("HADOOP_CONF_DIR", {
       throw new RuntimeException("maven syncer plugin require HADOOP_CONF_DIR environment variable.")
     })
-    //    val buildReq = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest)
+//    val buildReq = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest)
 
     val conf = configuration(Option(confDir), Option(principal), Option(keytab))
 
@@ -47,6 +49,9 @@ abstract class PluginTest extends AbstractMojo with HDFSOperations {
       }
       a.getFile.getName
     })
+
+    getLog.info(s"uploading project jar file ${archivePath}.")
+    copyFileFromLocal(fs, archivePath, appHdfsPath)
 
     val removedJars = jarsInHDFS.diff(dependencies.toArray[String])
     removedJars.foreach(jar => {

@@ -26,6 +26,10 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>cloud.fchen</groupId>
                 <artifactId>syncer</artifactId>
                 <version>1.0</version>
@@ -33,6 +37,7 @@
                     <hdfsDirectory>aaaaaa</hdfsDirectory>
                     <principal>chenfu@CDH.HOST.DXY</principal>
                     <keytab>/Users/fchen/tmp/chenfu.keytab</keytab>
+                    <archivePath>${build.lib.path}/${project.build.finalName}.${project.packaging}</archivePath>
                 </configuration>
                 <executions>
                     <execution>

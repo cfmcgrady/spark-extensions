@@ -1,6 +1,7 @@
 package cloud.fchen;
 
 import cloud.fchen.syncer.PluginTest;
+import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -24,21 +25,24 @@ public class Syncer extends PluginTest {
   private MavenSession session;
 
 
-  @Parameter( property = "hello.hdfsDirectory", required = true)
+  @Parameter( property = "hdfsDirectory", required = true)
   private String hdfsDirectory;
 
-  @Parameter( property = "hello.principal")
+  @Parameter( property = "principal")
   private String principal;
 
-  @Parameter( property = "hello.keytab")
+  @Parameter( property = "keytab")
   private String keytab;
 
   @Component
   private ProjectBuilder projectBuilder;
 
+  @Parameter( property = "archivePath", defaultValue = "${project.build.directory}/${project.build.finalName}.${project.packaging}")
+  private String archivePath;
+
   @Override public void execute() throws MojoExecutionException, MojoFailureException {
     try {
-      run2(session, project, hdfsDirectory, principal, keytab);
+      run2(session, project, archivePath, hdfsDirectory, principal, keytab);
     } catch (Exception e) {
       getLog().error("error.", e);
     }
