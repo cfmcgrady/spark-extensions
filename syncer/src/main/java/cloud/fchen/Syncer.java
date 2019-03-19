@@ -1,7 +1,6 @@
 package cloud.fchen;
 
-import cloud.fchen.syncer.PluginTest;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
+import cloud.fchen.syncer.PluginUtil;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -17,7 +16,7 @@ import org.apache.maven.project.ProjectBuilder;
  * @time 2019-03-18 13:43
  */
 @Mojo(name = "package", requiresDependencyResolution = ResolutionScope.RUNTIME)
-public class Syncer extends PluginTest {
+public class Syncer extends PluginUtil {
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   private MavenProject project;
 
@@ -25,7 +24,7 @@ public class Syncer extends PluginTest {
   private MavenSession session;
 
 
-  @Parameter( property = "hdfsDirectory", required = true)
+  @Parameter( property = "hdfsDirectory", defaultValue = "libs/${project.name}")
   private String hdfsDirectory;
 
   @Parameter( property = "principal")
@@ -42,7 +41,7 @@ public class Syncer extends PluginTest {
 
   @Override public void execute() throws MojoExecutionException, MojoFailureException {
     try {
-      run2(session, project, archivePath, hdfsDirectory, principal, keytab);
+      run(session, project, archivePath, hdfsDirectory, principal, keytab);
     } catch (Exception e) {
       getLog().error("error.", e);
     }

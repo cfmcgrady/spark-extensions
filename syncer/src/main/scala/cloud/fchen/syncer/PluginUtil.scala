@@ -3,26 +3,22 @@ package cloud.fchen.syncer
 import java.io.File
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.HashSet
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.security.UserGroupInformation
-import org.apache.maven.artifact.resolver.ArtifactResolver
 import org.apache.maven.execution.MavenSession
 import org.apache.maven.plugin.AbstractMojo
-import org.apache.maven.project.{DefaultProjectBuildingRequest, MavenProject}
+import org.apache.maven.project.MavenProject
 
 /**
  * @time 2019-03-18 12:40
  * @author fchen <cloud.chenfu@gmail.com>
  */
-abstract class PluginTest extends AbstractMojo with HDFSOperations {
-//  def run(project: MavenProject): Unit = {
-//    getLog.info("hello maven")
-//    project.getDependencies.asScala.map(_.toString).foreach(getLog.info)
-//  }
+abstract class PluginUtil extends AbstractMojo with HDFSOperations {
 
-  def run2(session: MavenSession,
+  def run(session: MavenSession,
            project: MavenProject,
            archivePath: String,
            appHdfsPath: String,
@@ -50,10 +46,14 @@ abstract class PluginTest extends AbstractMojo with HDFSOperations {
       a.getFile.getName
     })
 
-    getLog.info(s"uploading project jar file ${archivePath}.")
-    copyFileFromLocal(fs, archivePath, appHdfsPath)
+    if (!archivePath.endsWith(".pom")) {
+      getLog.info(s"uploading project jar file ${archivePath}.")
+      delete(fs, archivePath)
+      copyFileFromLocal(fs, archivePath, appHdfsPath)
+    }
 
-    val removedJars = jarsInHDFS.diff(dependencies.toArray[String])
+    val cacheJars = Cache.add(dependencies.toSet)
+    val removedJars = jarsInHDFS.diff(cacheJars.toArray[String])
     removedJars.foreach(jar => {
       getLog.info(s"removing dependency ${jar}.")
     })
@@ -73,6 +73,10 @@ trait HDFSOperations {
 
   def copyFileFromLocal(fs: FileSystem, source: String, targetDir: String): Unit = {
     fs.copyFromLocalFile(new Path(source), new Path(targetDir))
+  }
+
+  def delete(fs: FileSystem, source: String): Unit = {
+    fs.delete(new Path(source), true)
   }
 
   def createDir(fs: FileSystem, hdfsDir: String): Unit = {
@@ -120,6 +124,17 @@ trait HDFSOperations {
       UserGroupInformation.loginUserFromKeytab(principal.get, keytab.get)
     }
     conf
+  }
+
+}
+
+object Cache {
+
+  private val _cache = HashSet.empty[String]
+
+  def add(jars: Set[String]): Set[String] = {
+    _cache ++= jars
+    _cache.toSet
   }
 
 }
