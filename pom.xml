@@ -223,6 +223,7 @@
     <modules>
         <module>examples</module>
         <module>core</module>
+        <module>sql/spark-2_4</module>
         <module>assembly</module>
         <module>syncer</module>
     </modules>
