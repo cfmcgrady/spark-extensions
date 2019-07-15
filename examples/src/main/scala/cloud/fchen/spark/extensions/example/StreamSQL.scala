@@ -27,20 +27,54 @@ object StreamSQL {
       .getOrCreate()
     spark.sql(
       """
+        |CREATE TABLE if not exists hdfsTable
+        |(offset int, value string)
+        |USING org.apache.spark.sql.json
+        |OPTIONS (
+        |  path '/tmp/test'
+        |)
+      """.stripMargin
+    )
+    spark.sql(
+      """
         |CREATE TEMPORARY VIEW kafkaTable
         |USING kafka
         |OPTIONS (
-        |  kafka.bootstrap.servers "n1.cdh.host.dxy:9092,n2.cdh.host.dxy:9092,n5.cdh.host.dxy:9092",
+        |  kafka.bootstrap.servers "localhost:9092",
         |  subscribe 'fchentest20190626',
         |  stream 'true'
         |)
       """.stripMargin
-    ).explain(true)
-    spark.sql("select * from kafkaTable")
+    )
+    spark.sql(
+      """
+        |create or replace temporary view test_view as
+        | select offset, (cast (value as string)) as value from kafkaTable
+      """.stripMargin
+    )
+    spark.sql(
+      """
+        |select * from test_view
+      """.stripMargin)
       .writeStream
       .format("console")
       .start()
+
+    val x = spark.sql(
+      """
+        |insert into hdfsTable
+        |  select * from test_view
+      """.stripMargin
+    )
+    x.writeStream
+      .start()
       .awaitTermination()
+
+//    spark.sql("select * from kafkaTable")
+//      .writeStream
+//      .format("console")
+//      .start()
+//      .awaitTermination()
   }
 
 }

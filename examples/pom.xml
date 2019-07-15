@@ -45,8 +45,8 @@
                 <version>1.0</version>
                 <configuration>
                     <hdfsDirectory>aaaaaa</hdfsDirectory>
-                    <principal>chenfu@CDH.HOST.DXY</principal>
-                    <keytab>/Users/fchen/tmp/chenfu.keytab</keytab>
+                    <principal></principal>
+                    <keytab></keytab>
                     <archivePath>${build.lib.path}/${project.build.finalName}.${project.packaging}</archivePath>
                 </configuration>
                 <executions>

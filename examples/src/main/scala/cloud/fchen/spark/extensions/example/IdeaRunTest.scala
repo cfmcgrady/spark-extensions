@@ -18,8 +18,8 @@ object IdeaRunTest {
       None,
       Option(classpathTempDir),
       dependenciesInHDFSPath = s"libs/$uuid",
-      principal = Option("chenfu@CDH.HOST.DXY"),
-      keytab = Option("/Users/fchen/tmp/chenfu.keytab")
+      principal = None,
+      keytab = None
     )
     util.setup()
     val conf = new SparkConf()
