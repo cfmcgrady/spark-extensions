@@ -1,6 +1,8 @@
 package cloud.fchen.syncer
 
 import java.io.File
+import java.nio.file.Files
+import java.security.{DigestInputStream, MessageDigest}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.HashSet
@@ -8,6 +10,7 @@ import scala.collection.mutable.HashSet
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.maven.artifact.Artifact
 import org.apache.maven.execution.MavenSession
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.project.MavenProject
@@ -18,17 +21,18 @@ import org.apache.maven.project.MavenProject
  */
 abstract class PluginUtil extends AbstractMojo with HDFSOperations {
 
+  override def logInfo(log: String): Unit = getLog.info(log)
+
   def run(session: MavenSession,
-           project: MavenProject,
-           archivePath: String,
-           appHdfsPath: String,
-           principal: String,
-           keytab: String): Unit = {
+          project: MavenProject,
+          archivePath: String,
+          appHdfsPath: String,
+          principal: String,
+          keytab: String): Unit = {
 
     val confDir = sys.env.getOrElse("HADOOP_CONF_DIR", {
       throw new RuntimeException("maven syncer plugin require HADOOP_CONF_DIR environment variable.")
     })
-//    val buildReq = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest)
 
     val conf = configuration(Option(confDir), Option(principal), Option(keytab))
 
@@ -37,27 +41,53 @@ abstract class PluginUtil extends AbstractMojo with HDFSOperations {
     val jarsInHDFS = showJarInHDFS(fs, appHdfsPath)
     val currentPath = new Path(appHdfsPath)
 
+    // first upload the project dependencies jar file.
     getLog.info(s"uploading project dependencies using directory [ ${currentPath.toUri.toString} ].")
-    val dependencies = project.getArtifacts.asScala.map(a => {
-      if (!jarsInHDFS.contains(a.getFile.getName)) {
-        getLog.info(s"uploading ${a.getFile.getName} ...")
-        copyFileFromLocal(fs, a.getFile.getPath, appHdfsPath)
+    project.getArtifacts.asScala.map(artifact => {
+      withCache(artifact) {
+        if (!jarsInHDFS.contains(artifact.getFile.getName)) {
+          getLog.info(s"uploading ${artifact.getFile.getName} ...")
+          copyFileFromLocal(fs, artifact.getFile.getPath, appHdfsPath)
+        }
       }
-      a.getFile.getName
     })
 
-    if (!archivePath.endsWith(".pom")) {
-      getLog.info(s"uploading project jar file ${archivePath}.")
-      delete(fs, archivePath)
-      copyFileFromLocal(fs, archivePath, appHdfsPath)
+    // next, upload project artifact jar file.
+
+    // make sure the project jar file is not found in hdfs.
+    delete(fs, project.getArtifact.getFile.getName)
+    // upload the project jar file.
+    withCache(project.getArtifact) {
+      copyFileFromLocal(fs, project.getArtifact.getFile.getPath, appHdfsPath)
     }
 
-    val cacheJars = Cache.add(dependencies.toSet)
-    val removedJars = jarsInHDFS.diff(cacheJars.toArray[String])
+    // clear the unnecessary dependency jar file.
+    val removedJars = jarsInHDFS.diff(_cache.toArray[String])
     removedJars.foreach(jar => {
-      getLog.info(s"removing dependency ${jar}.")
+      val absolutePath = appHdfsPath + Path.SEPARATOR + jar
+      getLog.info(s"removing dependency ${absolutePath}.")
+      delete(fs, absolutePath)
     })
   }
+
+  def sha1(file: File): String = {
+    val sha = MessageDigest.getInstance("SHA-1")
+    val dis = new DigestInputStream(Files.newInputStream(file.toPath), sha)
+    while (dis.available > 0) {
+      dis.read
+    }
+    dis.close
+    sha.digest.map(b => String.format("%02x", Byte.box(b))).mkString
+  }
+
+  private def withCache[T](artifact: Artifact)(f: => T) {
+    getLog.debug(s"add ${artifact.getFile.getName} to cache.")
+    _cache += artifact.getFile.getName
+    f
+  }
+
+  private lazy val _cache = HashSet.empty[String]
+
 }
 
 trait HDFSOperations {
@@ -116,7 +146,7 @@ trait HDFSOperations {
     }
     if (principal.isDefined && keytab.isDefined) {
       // scalastyle:off println
-      println(s"logining for user ${principal.get} using keytab file ${keytab.get}")
+      logInfo(s"logining for user ${principal.get} using keytab file ${keytab.get}")
       // scalastyle:on
       // 需要手动login，原因是因为提交给yarn的时候需要kerberos认证
       conf.set("hadoop.security.authentication", "Kerberos")
@@ -126,15 +156,6 @@ trait HDFSOperations {
     conf
   }
 
-}
-
-object Cache {
-
-  private val _cache = HashSet.empty[String]
-
-  def add(jars: Set[String]): Set[String] = {
-    _cache ++= jars
-    _cache.toSet
-  }
+  def logInfo(log: String): Unit
 
 }
